@@ -31,6 +31,10 @@ func timeConverter(str string) (interface{}, error) {
 	return time.Parse(time.RFC3339Nano, str)
 }
 
+func durationConverter(str string) (interface{}, error) {
+	return time.ParseDuration(str)
+}
+
 var ptrTable = map[reflect.Kind]func(str string) (interface{}, error){
 	reflect.Int:     intConverter,
 	reflect.Int8:    intConverter,
@@ -56,8 +60,16 @@ var ptrTable = map[reflect.Kind]func(str string) (interface{}, error){
 // - string
 // - bool
 // - time.Time
+// - time.Duration
 // if this function receives value except aboves, returns nil.
 func Resolve(env string, val any) error {
+	var fn func(string) (interface{}, error)
+	switch val.(type) {
+	case *time.Time:
+		fn = timeConverter
+	case *time.Duration:
+		fn = durationConverter
+	}
 	rv := reflect.ValueOf(val)
 	kind := rv.Kind()
 	if kind == reflect.Ptr {
@@ -72,11 +84,9 @@ func Resolve(env string, val any) error {
 		kind = rv.Elem().Kind()
 		rv = rv.Elem()
 	}
-	fn, ok := ptrTable[kind]
-	if !ok {
-		if _, ok := val.(*time.Time); ok {
-			fn = timeConverter
-		} else {
+	if fn == nil {
+		var ok bool
+		if fn, ok = ptrTable[kind]; !ok {
 			return ErrNotFound
 		}
 	}

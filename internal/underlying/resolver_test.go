@@ -59,6 +59,17 @@ func TestResolve(t *testing.T) {
 			t.Errorf("wrong date: %s", ts)
 		}
 	})
+
+	t.Run("duration", func(t *testing.T) {
+		var d time.Duration
+		if err := Resolve("30s", &d); err != nil {
+			t.Error(err)
+		}
+		if d != 30*time.Second {
+			t.Errorf("wrong duration: %v", d)
+		}
+	})
+
 	t.Run("unknown", func(t *testing.T) {
 		type hoge struct{}
 		var h hoge
